@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 require('dotenv').config();
-const { v4: uuidv4 } = require('uuid');
 const mongoose = require('mongoose');
 mongoose.set('strictQuery', false);
 const User = require('./models/user');
@@ -43,6 +42,13 @@ app.use((req, res, next) => {
   next();
 });
 
+const normalizeDate = (date) => {
+  return new Date(
+    new Date(date).getTime() +
+      Math.abs(new Date(date).getTimezoneOffset() * 60000)
+  );
+};
+
 app.post('/api/users', (req, res) => {
   const user = req.body.username;
 
@@ -77,11 +83,14 @@ app.post('/api/users/:_id/exercises', (req, res) => {
   }
 
   const exercise = {
-    date: date
-      ? new Date(Date(date)).toDateString()
-      : new Date().toDateString(),
-    duration: Number(duration),
     description: description,
+    duration: Number(duration),
+    date: date
+      ? new Date(
+          new Date(date).getTime() +
+            Math.abs(new Date(date).getTimezoneOffset() * 60000)
+        ).toDateString()
+      : new Date().toDateString(),
   };
 
   User.findById({
@@ -108,13 +117,10 @@ app.post('/api/users/:_id/exercises', (req, res) => {
 app.get('/api/users/:_id/logs', (req, res) => {
   const { _id } = req.params;
   let { from, to, limit } = req.query;
-  console.log('query', req.query);
-  from = from ? new Date(from) : -Infinity;
-  to = to ? new Date(to) : Infinity;
-  limit = limit || Infinity;
 
-  console.log({ from });
-  console.log({ to });
+  from = from ? from : new Date(1970);
+  to = to ? to : Date.now();
+  limit = limit || Infinity;
 
   User.findById({
     _id: _id,
@@ -123,13 +129,17 @@ app.get('/api/users/:_id/logs', (req, res) => {
       res.status(200).json({
         _id: doc._id,
         username: doc.username,
+        from: from ? normalizeDate(from).toDateString() : '',
+        to: to ? normalizeDate(to).toDateString() : '',
         count: doc.exercises.length,
         log: doc.exercises
           .slice(0, limit)
           .filter(
             (exercise) =>
-              new Date(exercise.date) >= from && new Date(exercise.date) <= to
-          ),
+              new Date(exercise.date) >= normalizeDate(from) &&
+              new Date(exercise.date) <= normalizeDate(to)
+          )
+          .sort((a, b) => new Date(b.date) - new Date(a.date)),
       });
     })
     .catch((err) => {

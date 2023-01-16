@@ -12,8 +12,7 @@
     "express": "^4.16.4",
     "mongodb": "^4.13.0",
     "mongoose": "^6.8.3",
-    "nodemon": "^2.0.20",
-    "uuid": "^9.0.0"
+    "nodemon": "^2.0.20"
   },
   "repository": {
     "url": "https://github.com/freeCodeCamp/boilerplate-project-exercisetracker"
