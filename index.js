@@ -118,8 +118,8 @@ app.get('/api/users/:_id/logs', (req, res) => {
   const { _id } = req.params;
   let { from, to, limit } = req.query;
 
-  from = from ? from : new Date(1970);
-  to = to ? to : Date.now();
+  from = from || new Date(1970);
+  to = to || Date.now();
   limit = limit || Infinity;
 
   User.findById({
@@ -133,13 +133,13 @@ app.get('/api/users/:_id/logs', (req, res) => {
         to: to ? normalizeDate(to).toDateString() : '',
         count: doc.exercises.length,
         log: doc.exercises
-          .slice(0, limit)
           .filter(
             (exercise) =>
               new Date(exercise.date) >= normalizeDate(from) &&
               new Date(exercise.date) <= normalizeDate(to)
           )
-          .sort((a, b) => new Date(b.date) - new Date(a.date)),
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, limit),
       });
     })
     .catch((err) => {
